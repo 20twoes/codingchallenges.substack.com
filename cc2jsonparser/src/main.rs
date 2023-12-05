@@ -301,10 +301,10 @@ fn parse_tokens(tokens: &[Token]) -> Result<(), ParseError> {
             true
         },
         Token::LeftBrace => {
-            new_parse_object(&mut parser)
-        }
+            parse_object(&mut parser)
+        },
         Token::LeftBracket => {
-            new_parse_array(&mut parser)
+            parse_array(&mut parser)
         },
         _ => false,
     };
@@ -316,19 +316,19 @@ fn parse_tokens(tokens: &[Token]) -> Result<(), ParseError> {
     }
 }
 
-fn new_parse_object(parser: &mut JsonParser) -> bool {
+fn parse_object(parser: &mut JsonParser) -> bool {
     parser.read_left_brace();
 
     match parser.peek() {
         Token::RightBrace => true, // Empty object
-        Token::String(_) => new_parse_object_member(parser),
+        Token::String(_) => parse_object_member(parser),
         _ => false,
     };
 
     parser.read_right_brace()
 }
 
-fn new_parse_object_member(parser: &mut JsonParser) -> bool {
+fn parse_object_member(parser: &mut JsonParser) -> bool {
     let mut valid = parser.read_object_key();
     if !valid {
         return false;
@@ -339,7 +339,7 @@ fn new_parse_object_member(parser: &mut JsonParser) -> bool {
         return false;
     }
 
-    valid = new_parse_object_value(parser);
+    valid = parse_object_value(parser);
     if !valid {
         return false;
     }
@@ -349,31 +349,31 @@ fn new_parse_object_member(parser: &mut JsonParser) -> bool {
     match token {
         Token::Comma => {
             parser.read();
-            new_parse_object_member(parser)
+            parse_object_member(parser)
         },
         Token::RightBrace => true,
         _ => false,
     }
 }
 
-fn new_parse_object_value(parser: &mut JsonParser) -> bool {
+fn parse_object_value(parser: &mut JsonParser) -> bool {
     match parser.peek() {
         t if is_simple_value(t) => {
             parser.read();
             true
         },
-        Token::LeftBrace => new_parse_object(parser),
-        Token::LeftBracket => new_parse_array(parser),
+        Token::LeftBrace => parse_object(parser),
+        Token::LeftBracket => parse_array(parser),
         _ => false,
     }
 }
 
-fn new_parse_array(parser: &mut JsonParser) -> bool {
+fn parse_array(parser: &mut JsonParser) -> bool {
     parser.read_left_bracket();
 
     let valid = match parser.peek() {
         Token::RightBracket => true, // Empty array
-        _ => new_parse_array_element(parser),
+        _ => parse_array_element(parser),
     };
 
     if valid {
@@ -383,14 +383,14 @@ fn new_parse_array(parser: &mut JsonParser) -> bool {
     }
 }
 
-fn new_parse_array_element(parser: &mut JsonParser) -> bool {
+fn parse_array_element(parser: &mut JsonParser) -> bool {
     let valid = match parser.peek() {
         t if is_simple_value(t) => {
             parser.read();
             true
         },
-        Token::LeftBrace => new_parse_object(parser),
-        Token::LeftBracket => new_parse_array(parser),
+        Token::LeftBrace => parse_object(parser),
+        Token::LeftBracket => parse_array(parser),
         _ => false,
     };
 
@@ -401,7 +401,7 @@ fn new_parse_array_element(parser: &mut JsonParser) -> bool {
     match parser.peek() {
         Token::Comma => {
             parser.read();
-            new_parse_array_element(parser)
+            parse_array_element(parser)
         },
         // No more elements
         _ => true,
